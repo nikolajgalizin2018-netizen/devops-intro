@@ -1,0 +1,300 @@
+# Импортируем модуль datetime для работы с датами
+from datetime import datetime
+# Импортируем модуль re для работы с регулярными выражениями (поиск чисел в строках)
+import re
+
+# Получаем текущую дату и время с компьютера пользователя
+current_date = datetime.now()  # Например: 2026-09-04 14:30:00
+current_year = current_date.year  # Извлекаем год: 2026
+current_month = current_date.month  # Извлекаем месяц: 9 (сентябрь)
+current_day = current_date.day  # Извлекаем день: 4
+
+# Создаем список с названиями месяцев на русском языке
+# Индексы в списке: 0=января, 1=февраля, ..., 11=декабря
+# Когда обращаемся к months_names[current_month - 1], получаем правильное название
+# Например: current_month=9, значит months_names[8] = "сентября"
+months_names = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря"
+]
+
+# Выводим заголовок программы
+print("=== АНКЕТА ВЛАДЕЛЬЦА ПИТОМЦА ===\n")
+
+# Показываем пользователю текущую дату, чтобы он понимал, 
+# относительно какой даты будут производиться расчеты
+print(f"Сегодня: {current_day} {months_names[current_month - 1]} {current_year} года")
+print(f"Текущая дата используется для расчетов.\n")
+
+# Функция для получения возраста с определением единиц измерения
+# Эта функция обрабатывает различные варианты ввода возраста
+def get_age_with_units(message):
+    """
+    Функция запрашивает возраст и определяет, в каких единицах он указан.
+    Возвращает кортеж (годы, месяцы).
+    Например:
+    - "26" или "26 лет" вернет (26, 0)
+    - "5 месяцев" вернет (0, 5)
+    - "2 года 3 месяца" вернет (2, 3)
+    """
+    while True:  # Бесконечный цикл, пока не получим корректный ответ
+        value = input(message)  # Запрашиваем ввод у пользователя
+        
+        # Проверяем, есть ли в ответе указание на месяцы
+        # .lower() преобразует строку в нижний регистр для поиска
+        if 'месяц' in value.lower() or 'мес' in value.lower() or 'month' in value.lower():
+            # Ищем число в строке с помощью регулярного выражения
+            # \d+ означает "одна или более цифр"
+            match = re.search(r'\d+', value)
+            if match:
+                # Извлекаем найденное число и преобразуем в целое
+                months = int(match.group())  # Например: "5 месяцев" -> 5
+                years = months / 12  # Переводим месяцы в годы для вычислений
+                print(f"Понял, {months} месяцев = {years:.2f} года")
+                # Возвращаем 0 лет и найденное количество месяцев
+                return 0, months
+            else:
+                print("Не удалось определить число. Попробуйте снова.")
+                continue
+        
+        # Проверяем, есть ли указание на годы
+        elif 'год' in value.lower() or 'лет' in value.lower() or 'year' in value.lower():
+            match = re.search(r'\d+', value)
+            if match:
+                years = int(match.group())  # Например: "2 года" -> 2
+                print(f"Понял, {years} года")
+                # Возвращаем годы и 0 месяцев
+                return years, 0
+            else:
+                print("Не удалось определить число. Попробуйте снова.")
+                continue
+        
+        # Если единицы измерения не указаны, пробуем обработать как простое число
+        else:
+            try:
+                # Пробуем преобразовать ввод в целое число
+                number = int(value)
+                # Проверяем, что число не отрицательное
+                if number < 0:
+                    print("Ошибка: число не может быть отрицательным. Попробуйте снова.")
+                    continue
+                
+                # Если число маленькое (3 или меньше), уточняем единицы
+                # Это нужно, потому что "2" может означать и 2 года, и 2 месяца
+                if number <= 3:
+                    answer = input(f"Вы указали {number}. Это годы или месяцы? (годы/месяцы): ").lower()
+                    if 'месяц' in answer or 'мес' in answer:
+                        print(f"Понял, {number} месяцев")
+                        return 0, number  # 0 лет, указанное количество месяцев
+                    else:
+                        print(f"Понял, {number} года")
+                        return number, 0  # указанное количество лет, 0 месяцев
+                else:
+                    # Если число больше 3, скорее всего это годы
+                    print(f"Понял, {number} года")
+                    return number, 0  # годы, 0 месяцев
+                    
+            except ValueError:
+                # Если не удалось преобразовать в число, ищем число в строке
+                match = re.search(r'\d+', value)
+                if match:
+                    number = int(match.group())
+                    print(f"Я понял, вы имели в виду: {number}")
+                    
+                    # Уточняем единицы для маленьких чисел
+                    if number <= 3:
+                        answer = input(f"Это {number} годы или месяцы? (годы/месяцы): ").lower()
+                        if 'месяц' in answer or 'мес' in answer:
+                            print(f"Понял, {number} месяцев")
+                            return 0, number  # 0 лет, месяцы
+                        else:
+                            return number, 0  # годы, 0 месяцев
+                    else:
+                        return number, 0  # годы, 0 месяцев
+                else:
+                    print("Ошибка: введите корректное число. Попробуйте снова.")
+
+# Функция для вычисления даты покупки питомца
+def calculate_purchase_date(current_year, current_month, pet_age_years, pet_age_months):
+    """
+    Вычисляет, когда был куплен питомец, вычитая его возраст из текущей даты.
+    Например: сегодня сентябрь 2026, питомцу 5 месяцев -> апрель 2026
+    """
+    # Переводим возраст питомца в общее количество месяцев
+    # Например: 1 год 3 месяца = 15 месяцев
+    total_months = pet_age_years * 12 + pet_age_months
+    
+    # Начинаем с текущего года
+    purchase_year = current_year
+    # Вычитаем месяцы из текущего месяца
+    purchase_month = current_month - total_months
+    
+    # Если месяц стал отрицательным или нулевым, корректируем
+    # Например: текущий месяц 3 (март), вычитаем 5 месяцев -> -2
+    # Добавляем 12: -2 + 12 = 10 (октябрь), и уменьшаем год на 1
+    while purchase_month <= 0:
+        purchase_month += 12
+        purchase_year -= 1
+    
+    return purchase_year, purchase_month
+
+# Функция для вычисления даты рождения
+def calculate_birth_date(current_year, current_month, age_years, age_months):
+    """
+    Вычисляет дату рождения, вычитая возраст из текущей даты.
+    Работает аналогично функции calculate_purchase_date
+    """
+    # Переводим возраст в общее количество месяцев
+    total_months = age_years * 12 + age_months
+    
+    birth_year = current_year
+    birth_month = current_month - total_months
+    
+    # Корректируем, если месяц стал отрицательным или нулевым
+    while birth_month <= 0:
+        birth_month += 12
+        birth_year -= 1
+    
+    return birth_year, birth_month
+
+# Функция для вычисления возраста на определенную дату
+def calculate_age_at_date(birth_year, birth_month, target_year, target_month):
+    """
+    Вычисляет возраст человека на определенную дату.
+    Например: родился в сентябре 2000, target - апрель 2026
+    Результат: 25 лет 7 месяцев
+    """
+    # Вычисляем разницу в годах
+    age_years = target_year - birth_year
+    # Вычисляем разницу в месяцах
+    age_months = target_month - birth_month
+    
+    # Если разница в месяцах отрицательная, корректируем
+    # Например: родился в сентябре, target - апрель
+    # 4 - 9 = -5, значит еще не исполнилось полных лет
+    if age_months < 0:
+        age_years -= 1  # Уменьшаем количество лет
+        age_months += 12  # Добавляем 12 месяцев
+    
+    return age_years, age_months
+
+# === НАЧАЛО ОСНОВНОЙ ПРОГРАММЫ ===
+
+# Запрашиваем имя владельца
+name = input("Введите ваше имя: ")
+# Проверяем, что имя не пустое (убираем пробелы методом strip())
+while not name.strip():
+    print("Имя не может быть пустым!")
+    name = input("Введите ваше имя: ")
+
+# Запрашиваем возраст владельца
+print("\nВведите данные о владельце:")
+# Функция вернет кортеж (годы, месяцы), который мы распаковываем
+age_years, age_months = get_age_with_units("Введите ваш возраст (например: 26 или 26 лет): ")
+
+# Запрашиваем место проживания
+city = input("Где вы живете? ")
+# Проверяем, что ответ не пустой
+while not city.strip():
+    print("Место проживания не может быть пустым!")
+    city = input("Где вы живете? ")
+
+# Запрашиваем имя питомца
+pet_name = input("Введите имя вашего питомца: ")
+# Проверяем, что имя не пустое
+while not pet_name.strip():
+    print("Имя питомца не может быть пустым!")
+    pet_name = input("Введите имя вашего питомца: ")
+
+# Запрашиваем возраст питомца
+print("\nВведите данные о питомце:")
+pet_age_years, pet_age_months = get_age_with_units("Сколько лет вашему питомцу? (например: 5 месяцев или 2 года): ")
+
+# Проверка на корректность: возраст питомца не должен превышать возраст владельца
+# Переводим оба возраста в месяцы для сравнения
+total_pet_age_months = pet_age_years * 12 + pet_age_months
+total_owner_age_months = age_years * 12 + age_months
+
+if total_pet_age_months > total_owner_age_months:
+    print(f"\nВнимание: возраст питомца больше возраста владельца!")
+    print("Проверьте правильность введенных данных.")
+
+# Вычисляем важные даты
+# Дата рождения владельца
+birth_year, birth_month = calculate_birth_date(current_year, current_month, age_years, age_months)
+
+# Дата покупки питомца
+purchase_year, purchase_month = calculate_purchase_date(current_year, current_month, pet_age_years, pet_age_months)
+
+# Возраст владельца на момент покупки питомца
+owner_age_at_purchase_years, owner_age_at_purchase_months = calculate_age_at_date(
+    birth_year, birth_month, purchase_year, purchase_month
+)
+
+# === ВЫВОД РЕЗУЛЬТАТОВ ===
+
+print("\n=== РЕЗУЛЬТАТЫ ===\n")
+
+# Выводим основную информацию
+print(f"Имя владельца: {name}")
+print(f"Возраст владельца: {age_years} лет")
+print(f"Место проживания: {city}")
+print(f"Имя питомца: {pet_name}")
+
+# Форматируем вывод возраста питомца в зависимости от количества лет и месяцев
+if pet_age_months > 0 and pet_age_years == 0:
+    # Возраст только в месяцах
+    if pet_age_months == 1:
+        print(f"Возраст питомца: {pet_age_months} месяц")
+    elif pet_age_months in [2, 3, 4]:
+        print(f"Возраст питомца: {pet_age_months} месяца")
+    else:
+        print(f"Возраст питомца: {pet_age_months} месяцев")
+elif pet_age_months > 0 and pet_age_years > 0:
+    # Возраст в годах и месяцах
+    # Определяем правильное склонение для "год/года/лет"
+    if pet_age_years == 1:
+        years_str = "год"
+    elif pet_age_years in [2, 3, 4]:
+        years_str = "года"
+    else:
+        years_str = "лет"
+    
+    # Определяем правильное склонение для "месяц/месяца/месяцев"
+    if pet_age_months == 1:
+        months_str = "месяц"
+    elif pet_age_months in [2, 3, 4]:
+        months_str = "месяца"
+    else:
+        months_str = "месяцев"
+    
+    print(f"Возраст питомца: {pet_age_years} {years_str} {pet_age_months} {months_str}")
+else:
+    # Возраст только в годах
+    if pet_age_years == 1:
+        print(f"Возраст питомца: {pet_age_years} год")
+    elif pet_age_years in [2, 3, 4]:
+        print(f"Возраст питомца: {pet_age_years} года")
+    else:
+        print(f"Возраст питомца: {pet_age_years} лет")
+
+# Выводим вычисленные даты
+print("\n--- ВЫЧИСЛЕННЫЕ ДАННЫЕ ---")
+print(f"Текущая дата: {current_day} {months_names[current_month - 1]} {current_year} года")
+print(f"Дата рождения владельца: {months_names[birth_month - 1]} {birth_year} года")
+print(f"Дата приобретения питомца: {months_names[purchase_month - 1]} {purchase_year} года")
+
+# Выводим возраст владельца при покупке питомца с правильным склонением
+if owner_age_at_purchase_months > 0:
+    # Если есть и годы, и месяцы
+    if owner_age_at_purchase_months == 1:
+        print(f"Возраст владельца при покупке питомца: {owner_age_at_purchase_years} лет {owner_age_at_purchase_months} месяц")
+    elif owner_age_at_purchase_months in [2, 3, 4]:
+        print(f"Возраст владельца при покупке питомца: {owner_age_at_purchase_years} лет {owner_age_at_purchase_months} месяца")
+    else:
+        print(f"Возраст владельца при покупке питомца: {owner_age_at_purchase_years} лет {owner_age_at_purchase_months} месяцев")
+else:
+    # Если только годы
+    print(f"Возраст владельца при покупке питомца: {owner_age_at_purchase_years} лет")
+
+print("\n=== КОНЕЦ АНКЕТЫ ===")
